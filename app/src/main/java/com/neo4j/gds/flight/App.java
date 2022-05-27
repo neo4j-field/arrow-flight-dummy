@@ -81,6 +81,7 @@ public class App implements AutoCloseable {
 
         try (final RootAllocator allocator = new RootAllocator(config.build())) {
             var app = new App(allocator, location, cert, key);
+
             Runtime.getRuntime()
                     .addShutdownHook(new Thread(() -> {
                         try {

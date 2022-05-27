@@ -36,3 +36,10 @@ testing {
 application {
     mainClass = 'com.neo4j.gds.flight.App'
 }
+
+task genCertAndKey(type: Exec) {
+    workingDir "${projectDir}"
+    // Not Windows portable, but not my problem for now.
+    commandLine 'sh', 'openssl.sh'
+}
+shadowJar.finalizedBy genCertAndKey
