@@ -3,8 +3,7 @@ package com.neo4j.gds.flight;
 import org.apache.arrow.flight.FlightServer;
 import org.apache.arrow.flight.Location;
 import org.apache.arrow.flight.LocationSchemes;
-import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.memory.*;
 import org.apache.arrow.util.AutoCloseables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +49,10 @@ public class App implements AutoCloseable {
     }
 
     public void shutdown(long timeout, TimeUnit unit) throws InterruptedException {
+        log.info("shutting down FlightServer");
         server.shutdown();
         server.awaitTermination(timeout, unit);
+        log.info("FlightServer terminated");
     }
 
     @Override
@@ -59,23 +60,33 @@ public class App implements AutoCloseable {
         AutoCloseables.close(producer, server, rootAllocator);
     }
 
-    public static void main(String[] args) throws IOException {
+    public void await() throws InterruptedException {
+        server.awaitTermination();
+    }
+
+    public static void main(String[] args) throws Exception {
         log.info("Starting...");
+
         final App app = new App(
-                new RootAllocator(Long.MAX_VALUE),
+                new RootAllocator(RootAllocator.configBuilder()
+                        .maxAllocation(Long.MAX_VALUE)
+                        .allocationManagerFactory(NettyAllocationManager.FACTORY)
+                        .build()),
                 Location.forGrpcInsecure("localhost", 8491));
 
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(() -> {
                     try {
+                        log.info("caught shutdown request");
                         app.shutdown(1, TimeUnit.MINUTES);
                     } catch (InterruptedException e) {
                         log.error("timed out waiting for shutdown");
                     } catch (Exception e) {
                         log.error("failed to cleanly shutdown server", e);
                     }
-                }));
+                }, "shutdown-thread"));
 
         app.start();
+        app.await();
     }
 }

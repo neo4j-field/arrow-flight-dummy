@@ -1,9 +1,10 @@
 plugins {
-    // Apply the application plugin to add support for building a CLI application in Java.
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
     id 'application'
 }
 
-def arrowVersion = "8.0.0"
+def arrowVersion = '8.0.0'
+def slf4jVersion = '1.7.25'
 
 java {
     toolchain {
@@ -18,7 +19,9 @@ repositories {
 
 dependencies {
     implementation (
+            [group: 'org.slf4j', name: 'slf4j-simple', version: slf4jVersion],
             [group: 'org.apache.arrow', name: 'flight-grpc', version: arrowVersion],
+            [group: 'org.apache.arrow', name: 'arrow-memory-netty', version: arrowVersion],
     )
 }
 
